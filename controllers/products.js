@@ -3,9 +3,9 @@ const Product = require("../models/product");
 const getAllProductsStatic = async (req, res) => {
   // find all the products sort by name,price
 
-//   $gt -> greater than 
-//   $lt -> less than 
-  const products = await Product.find({price:{$gt:30}})
+  //   $gt -> greater than
+  //   $lt -> less than
+  const products = await Product.find({ price: { $gt: 30 } })
     .sort("price")
     .select({ name: 1, price: 1 })
     .limit(5)
@@ -15,7 +15,7 @@ const getAllProductsStatic = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   // req.query to access the query params passed to the request
-  const { name, company, price, sort, fields } = req.query;
+  const { name, company, price, sort, fields, numericFilters } = req.query;
   const queryObj = {};
 
   if (name) {
@@ -29,6 +29,37 @@ const getAllProducts = async (req, res) => {
 
   if (price) {
     queryObj.price = price;
+  }
+
+  if (numericFilters) {
+    let operatorMap = {
+      ">": "$gt",
+      ">=": "$gte",
+      "=": "$eq",
+      "<": "$lt",
+      "<=": "$lte",
+    };
+    let regExp = /\b(>|<|>=|=|<=)\b/g;
+    // returns string
+    let filter = numericFilters.replace(
+      regExp,
+      (match) => `-${operatorMap[match]}-`
+    );
+
+    // console.log(filter)
+
+    const options = ["price", "rating"];
+
+    filter = filter.split(",").forEach((item) => {
+      const [field, operator, value] = item.split("-");
+      if (options.includes(field)) {
+        queryObj[field] = {
+          [operator]: Number(value),
+        };
+      }
+    });
+
+    // console.log(queryObj);
   }
 
   let result = Product.find(queryObj);
@@ -45,17 +76,17 @@ const getAllProducts = async (req, res) => {
 
   if (fields) {
     const fieldList = fields.split(",").join(" ");
-    result =  result.select(fieldList);
-  } 
+    result = result.select(fieldList);
+  }
 
-   const page = Number(req.query.page) || 1
-   const limit = Number(req.query.limit) ||  10
-   const skip = (page - 1) * limit 
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
-   result = result.skip(skip).limit(limit)
+  result = result.skip(skip).limit(limit);
 
-  const products = await result 
-  return res.status(200).json({ products,nBHits:products.length });
+  const products = await result;
+  return res.status(200).json({ products, nBHits: products.length });
 };
 
 module.exports = {
