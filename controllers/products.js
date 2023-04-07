@@ -4,13 +4,15 @@ const getAllProductsStatic = async (req, res) => {
   // find all the products sort by name,price
   const products = await Product.find({})
     .sort("-name -price")
-    .select({ name: 1, price: 1, company: 1 });
+    .select({ name: 1, price: 1, company: 1 })
+    .limit(5)
+    .skip(1);
   return res.status(200).json(products);
 };
 
 const getAllProducts = async (req, res) => {
   // req.query to access the query params passed to the request
-  const { name, company, price, sort, fields } = req.query;
+  const { name, company, price, sort, fields, limit, skip } = req.query;
   const queryObj = {};
 
   if (name) {
@@ -40,10 +42,10 @@ const getAllProducts = async (req, res) => {
 
   let products;
   if (fields) {
-    const fieldList = fields.split(",").join(" ")
-    products = await result.select(fieldList);
+    const fieldList = fields.split(",").join(" ");
+    products = await result.select(fieldList).limit(limit).skip(skip);
   } else {
-    products = await result.select();
+    products = await result.limit(limit).skip(skip);
   }
 
   return res.status(200).json({ products });
