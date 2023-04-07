@@ -1,8 +1,14 @@
 const Product = require("../models/product");
 
+const getAllProductsStatic = async (req, res) => {
+  // find all the products sort by name,price
+  const products = await Product.find({}).sort("name price");
+  return res.status(200).json(products);
+};
+
 const getAllProducts = async (req, res) => {
   // req.query to access the query params passed to the request
-  const { name, company, price } = req.query;
+  const { name, company, price, sort } = req.query;
   const queryObj = {};
 
   if (name) {
@@ -18,12 +24,21 @@ const getAllProducts = async (req, res) => {
     queryObj.price = price;
   }
 
-  const products = await Product.find(queryObj);
+  let result =  Product.find(queryObj);
+
+  if (sort) {
+    sortList = sort.split(",").join(" ");
+    result = result.sort(sortList);
+  } else {
+    result = result.sort("createdAt");
+  }
   //   following line was just added to test the async-express-error package
   //   throw new Error("oops")
+  const products = await result;
   return res.status(200).json({ products });
 };
 
 module.exports = {
+  getAllProductsStatic,
   getAllProducts,
 };
